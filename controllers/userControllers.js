@@ -1,6 +1,9 @@
 import User from "../models/userModels.js";
 import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 
 export function postUsers(req, res) {
@@ -53,7 +56,7 @@ export function loginUser(req, res) {
         lastName: user.lastName,
         type: user.type,
       },
-      "secret",
+      process.env.JWT_KEY,
       { expiresIn: "1h" }
     );
 
