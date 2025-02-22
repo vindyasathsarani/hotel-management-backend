@@ -69,3 +69,13 @@ export function loginUser(req, res) {
     res.status(500).json({ message: "Internal server error" });
   });
 }
+
+export function isAdminValid(req){
+  if(req.user == null){
+      return false
+  }
+  if(req.user.type != "admin"){
+      return false
+  }
+  return true
+}

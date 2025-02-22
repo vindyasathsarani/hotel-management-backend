@@ -1,4 +1,5 @@
 import Category from "../models/categoryModels.js";
+import { isAdminValid } from "./userControllers.js";
 
 export function createCategory(req, res) {
   if (req.user == null) {
@@ -91,3 +92,28 @@ export function getCategoryByName(req, res) {
       });
     });
 }
+
+export function updateCategory(req, res){
+
+  if(!isAdminValid(req)){
+    res.status(403).json({
+        message : "Unauthorized"
+    })
+    return
+  }
+  const name = req.params.name;
+  Category.updateOne({name : name},req.body).then(
+    ()=>{
+        res.json({
+            message : "Category created successfully"
+        })
+    }
+  ).catch(
+    ()=>{
+        res.json({
+            message : "Failed to update category"
+        })
+    }
+  )
+}
+
