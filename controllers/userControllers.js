@@ -1,10 +1,9 @@
 import User from "../models/userModels.js";
 import jwt from "jsonwebtoken";
-import bcrypt from 'bcrypt'
-import dotenv from 'dotenv'
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
 
-dotenv.config()
-
+dotenv.config();
 
 export function postUsers(req, res) {
   const user = req.body;
@@ -34,48 +33,62 @@ export function loginUser(req, res) {
   const credentials = req.body;
 
   User.findOne({
-    email: credentials.email, 
-  }).then((user) => {
-    if (user == null) {
-      return res.status(404).json({
-        message: "User not found",
+    email: credentials.email,
+  })
+    .then((user) => {
+      if (user == null) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      const passwordMatch = bcrypt.compareSync(
+        credentials.password,
+        user.password
+      );
+      if (!passwordMatch) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+
+      const token = jwt.sign(
+        {
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          type: user.type,
+        },
+        process.env.JWT_KEY,
+        { expiresIn: "1h" }
+      );
+
+      res.json({
+        message: "User found",
+        user: user,
+        token: token,
       });
-    }
-
-    
-    const passwordMatch = bcrypt.compareSync(credentials.password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        type: user.type,
-      },
-      process.env.JWT_KEY,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      message: "User found",
-      user: user,
-      token: token,
+    })
+    .catch((err) => {
+      res.status(500).json({ message: "Internal server error" });
     });
-  }).catch((err) => {
-    res.status(500).json({ message: "Internal server error" });
-  });
 }
 
-export function isAdminValid(req){
-  if(req.user == null){
-      return false
+export function isAdminValid(req) {
+  if (req.user == null) {
+    return false;
   }
-  if(req.user.type != "admin"){
-      return false
+  if (req.user.type != "admin") {
+    return false;
   }
-  return true
+  return true;
+}
+
+export function isCustomerValid(req) {
+  if (req.user == null) {
+    return false;
+  }
+  if (req.user.type != "customer") {
+    return false;
+  }
+  return true;
 }
