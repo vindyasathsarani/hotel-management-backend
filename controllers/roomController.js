@@ -114,3 +114,25 @@ export function updateRoom(req, res) {
         });
     });
 }
+
+export function getRoomsByCategory(req, res){
+  const category = req.params.category
+  Room.find({category:category}).then(
+    (result)=>{
+      res.json(
+        {
+          rooms : result
+        }
+      )
+    }
+  ).catch(
+    ()=>[
+      res.json(
+        {
+          message : "Failed to get rooms"
+        }
+      )
+    ]
+  )
+
+}
