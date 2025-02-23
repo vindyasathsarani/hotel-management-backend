@@ -9,7 +9,7 @@ export function createRoom(req, res) {
     return;
   }
 
-  const newRoom = newRoom(req.body);
+  const newRoom = new Room(req.body);
   newRoom
     .save()
     .then((result) => {
@@ -72,22 +72,45 @@ export function findRoomById(req, res) {
     });
 }
 
-export function getRooms(req, res){
-    Room.find().then(
-        (result)=>{
-            res.json(
-                {
-                    rooms : result
-                }
-            )
-        }
-    ).catch(
-        ()=>{
-            res.json(
-                {
-                    message : "Failed to get rooms"
-                }
-            )
-        }
-    )
+export function getRooms(req, res) {
+  Room.find()
+    .then((result) => {
+      res.json({
+        rooms: result,
+      });
+    })
+    .catch(() => {
+      res.json({
+        message: "Failed to get rooms",
+      });
+    });
+}
+
+export function updateRoom(req, res) {
+  if (!isAdminValid(req)) {
+    res.status(403).json({
+      message: "Forbidden",
+    });
+    return;
+  }
+
+  const roomId = req.params.roomId;
+
+  Room.findOneAndUpdate(
+    {
+      roomId: roomId,
+    },
+    req.body
+  )
+    .then(() => {
+      res.json({
+        message: "Room updated successfully",
+      });
+    })
+    .catch(() => {
+      res,
+        json({
+          message: "Room update failed",
+        });
+    });
 }
