@@ -1,5 +1,6 @@
 import Booking from "../models/bookingModels.js";
 import { isCustomerValid } from "./userControllers.js";
+import { isAdminValid } from "./userControllers.js";
 
 export function createBooking(req, res) {
   if (!isCustomerValid(req)) {
@@ -38,6 +39,28 @@ export function createBooking(req, res) {
     .catch((err) => {
       res.json({
         message: "Booking creation failed",
+        error: err,
+      });
+    });
+}
+
+export function getAllBookings(req, res) {
+  if (!isAdminValid(req)) {
+    res.status(403).json({
+      message: "Forbidden",
+    });
+    return;
+  }
+
+  Booking.find()
+    .then((result) => {
+      res.json({
+        bookings: result,
+      });
+    })
+    .catch((err) => {
+      res.json({
+        message: "Failed to retrieve bookings",
         error: err,
       });
     });
