@@ -65,3 +65,61 @@ export function getAllBookings(req, res) {
       });
     });
 }
+
+export function cancelBooking(req, res) {
+  if (!isAdminValid(req)) {
+    res.status(403).json({
+      message: "Forbidden",
+    });
+    return;
+  }
+
+  const bookingId = req.params.bookingId;
+
+  Booking.findOneAndUpdate(
+    { bookingId: bookingId },
+    { status: "cancelled" },
+    { new: true } // Ensure the updated document is returned
+  )
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({
+          message: "Booking not found",
+        });
+        return;
+      }
+      res.json({
+        message: "Booking cancelled successfully",
+        result: result,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        message: "Booking cancellation failed",
+        error: err,
+      });
+    });
+}
+
+
+export function getUserBookings(req, res) {
+  if (!isCustomerValid(req)) {
+    res.status(403).json({
+      message: "Forbidden",
+    });
+    return;
+  }
+
+  Booking.find({ email: req.user.email })
+    .then((result) => {
+      res.json({
+        bookings: result,
+      });
+    })
+    .catch((err) => {
+      res.json({
+        message: "Failed to retrieve bookings",
+        error: err,
+      });
+    });
+}
