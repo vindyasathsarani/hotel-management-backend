@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import categoryRouter from "./routes/categoryRoutes.js";
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
+import feedbackRouter from "./routes/feedbackRoutes.js";
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use("/api/gallery", galleryItemRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/rooms", roomRouter);
 app.use("/api/booking", bookingRouter)
+app.use("/api/feedback", feedbackRouter)
 
 app.listen(5000, (req, res) => {
   console.log("Server is running on port 5000");
