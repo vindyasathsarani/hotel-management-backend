@@ -9,12 +9,14 @@ import categoryRouter from "./routes/categoryRoutes.js";
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import feedbackRouter from "./routes/feedbackRoutes.js";
+import cors from 'cors'
 
 dotenv.config();
 
 const app = express();
 
 app.use(bodyParser.json());
+app.use(cors())
 
 const connectionString = process.env.MONGO_URL;
 
@@ -23,7 +25,7 @@ app.use((req, res, next) => {
   if (token != null) {
     jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
       if (decoded != null) {
-        req.user = decoded;
+        req.body.user = decoded;
         next();
       } else {
         next();

@@ -92,3 +92,18 @@ export function isCustomerValid(req) {
   }
   return true;
 }
+
+export function getUser(req, res){
+  const user = req.body.user
+  if(user == null){
+    res.json({
+      message : "not found"
+    })
+  }else{
+    res.json({
+      message: "found",
+      user : user
+    })
+  }
+
+}
