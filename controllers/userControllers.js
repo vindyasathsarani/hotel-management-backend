@@ -5,105 +5,96 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export function postUsers(req, res) {
-  const user = req.body;
+export async function postUsers(req, res) {
+  try {
+    const user = req.body;
+    const password = req.body.password;
 
-  const password = req.body.password;
+    const passwordHash = bcrypt.hashSync(password, 10);
+    user.password = passwordHash;
 
-  const passwordHash = bcrypt.hashSync(password, 10);
+    const newUser = new User(user);
+    await newUser.save();
 
-  user.password = passwordHash;
-
-  const newUser = new User(user);
-  newUser
-    .save()
-    .then(() => {
-      res.json({
-        message: "User Created Successfully",
-      });
-    })
-    .catch(() => {
-      res.json({
-        message: "User Creation Failed",
-      });
+    res.json({
+      message: "User Created Successfully",
     });
+  } catch (error) {
+    res.status(500).json({
+      message: "User Creation Failed",
+      error: error.message,
+    });
+  }
 }
 
-export function loginUser(req, res) {
-  const credentials = req.body;
+export async function loginUser(req, res) {
+  try {
+    const credentials = req.body;
+    const user = await User.findOne({ email: credentials.email });
 
-  User.findOne({
-    email: credentials.email,
-  })
-    .then((user) => {
-      if (user == null) {
-        return res.status(404).json({
-          message: "User not found",
-        });
-      }
-
-      const passwordMatch = bcrypt.compareSync(
-        credentials.password,
-        user.password
-      );
-      if (!passwordMatch) {
-        return res.status(401).json({ message: "Invalid password" });
-      }
-
-      const token = jwt.sign(
-        {
-          id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          type: user.type,
-        },
-        process.env.JWT_KEY,
-        { expiresIn: "1h" }
-      );
-
-      res.json({
-        message: "User found",
-        user: user,
-        token: token,
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
       });
-    })
-    .catch((err) => {
-      res.status(500).json({ message: "Internal server error" });
+    }
+
+    const passwordMatch = bcrypt.compareSync(credentials.password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        type: user.type,
+      },
+      process.env.JWT_KEY,
+      { expiresIn: "1h" }
+    );
+
+    res.json({
+      message: "User found",
+      user: user,
+      token: token,
     });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 }
 
 export function isAdminValid(req) {
-  if (req.user == null) {
-    return false;
-  }
-  if (req.user.type != "admin") {
+  if (!req.user || req.user.type !== "admin") {
     return false;
   }
   return true;
 }
 
 export function isCustomerValid(req) {
-  if (req.user == null) {
-    return false;
-  }
-  if (req.user.type != "customer") {
+  if (!req.user || req.user.type !== "customer") {
     return false;
   }
   return true;
 }
 
-export function getUser(req, res){
-  const user = req.body.user
-  if(user == null){
-    res.json({
-      message : "not found"
-    })
-  }else{
+export function getUser(req, res) {
+  try {
+    const user = req.body.user;
+    if (!user) {
+      return res.json({
+        message: "not found",
+      });
+    }
     res.json({
       message: "found",
-      user : user
-    })
+      user: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to retrieve user",
+      error: error.message,
+    });
   }
-
 }
