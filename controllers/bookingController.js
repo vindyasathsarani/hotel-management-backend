@@ -2,124 +2,141 @@ import Booking from "../models/bookingModels.js";
 import { isCustomerValid } from "./userControllers.js";
 import { isAdminValid } from "./userControllers.js";
 
-export function createBooking(req, res) {
-  if (!isCustomerValid(req)) {
-    res.status(403).json({
-      message: "Forbidden",
-    });
-    return;
-  }
-  const startingId = 1200;
+export async function createBooking(req, res) {
+  try {
+    if (!isCustomerValid(req)) {
+      res.status(403).json({
+        message: "Forbidden",
+      });
+      return;
+    }
+    const startingId = 1200;
 
-  Booking.countDocuments({})
-    .then((count) => {
-      const newId = startingId + count + 1;
-      const newBooking = new Booking({
-        bookingId: newId,
-        roomId: req.body.roomId,
-        email: req.user.email,
-        start: req.body.start,
-        end: req.body.end,
-      });
-      newBooking
-        .save()
-        .then((result) => {
-          res.json({
-            message: "Booking created successfully",
-            result: result,
-          });
-        })
-        .catch((err) => {
-          res.json({
-            message: "Booking creation failed",
-            error: err,
-          });
-        });
-    })
-    .catch((err) => {
-      res.json({
-        message: "Booking creation failed",
-        error: err,
-      });
+    const count = await Booking.countDocuments({});
+    const newId = startingId + count + 1;
+    const newBooking = new Booking({
+      bookingId: newId,
+      roomId: req.body.roomId,
+      email: req.user.email,
+      start: req.body.start,
+      end: req.body.end,
     });
+
+    const result = await newBooking.save();
+    res.json({
+      message: "Booking created successfully",
+      result: result,
+    });
+  } catch (err) {
+    res.json({
+      message: "Booking creation failed",
+      error: err,
+    });
+  }
 }
 
-export function getAllBookings(req, res) {
-  if (!isAdminValid(req)) {
-    res.status(403).json({
-      message: "Forbidden",
-    });
-    return;
-  }
+export async function getAllBookings(req, res) {
+  try {
+    if (!isAdminValid(req)) {
+      res.status(403).json({
+        message: "Forbidden",
+      });
+      return;
+    }
 
-  Booking.find()
-    .then((result) => {
-      res.json({
-        bookings: result,
-      });
-    })
-    .catch((err) => {
-      res.json({
-        message: "Failed to retrieve bookings",
-        error: err,
-      });
+    const result = await Booking.find();
+    res.json({
+      bookings: result,
     });
+  } catch (err) {
+    res.json({
+      message: "Failed to retrieve bookings",
+      error: err,
+    });
+  }
 }
 
-export function cancelBooking(req, res) {
-  if (!isAdminValid(req)) {
-    res.status(403).json({
-      message: "Forbidden",
+export async function cancelBooking(req, res) {
+  try {
+    if (!isAdminValid(req)) {
+      res.status(403).json({
+        message: "Forbidden",
+      });
+      return;
+    }
+
+    const bookingId = req.params.bookingId;
+    const result = await Booking.findOneAndUpdate(
+      { bookingId: bookingId },
+      { status: "cancelled" },
+      { new: true } 
+    );
+
+    if (!result) {
+      res.status(404).json({
+        message: "Booking not found",
+      });
+      return;
+    }
+
+    res.json({
+      message: "Booking cancelled successfully",
+      result: result,
     });
-    return;
+  } catch (err) {
+    res.status(500).json({
+      message: "Booking cancellation failed",
+      error: err,
+    });
   }
-
-  const bookingId = req.params.bookingId;
-
-  Booking.findOneAndUpdate(
-    { bookingId: bookingId },
-    { status: "cancelled" },
-    { new: true } // Ensure the updated document is returned
-  )
-    .then((result) => {
-      if (!result) {
-        res.status(404).json({
-          message: "Booking not found",
-        });
-        return;
-      }
-      res.json({
-        message: "Booking cancelled successfully",
-        result: result,
-      });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        message: "Booking cancellation failed",
-        error: err,
-      });
-    });
 }
 
+export async function getUserBookings(req, res) {
+  try {
+    if (!isCustomerValid(req)) {
+      res.status(403).json({
+        message: "Forbidden",
+      });
+      return;
+    }
 
-export function getUserBookings(req, res) {
-  if (!isCustomerValid(req)) {
-    res.status(403).json({
-      message: "Forbidden",
+    const result = await Booking.find({ email: req.user.email });
+    res.json({
+      bookings: result,
     });
-    return;
+  } catch (err) {
+    res.json({
+      message: "Failed to retrieve bookings",
+      error: err,
+    });
   }
+}
 
-  Booking.find({ email: req.user.email })
-    .then((result) => {
-      res.json({
-        bookings: result,
+export async function completeBooking(req, res) {
+  try {
+    const bookingId = req.params.bookingId; 
+
+   
+    const booking = await Booking.findOne({ bookingId: bookingId });
+
+   
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
       });
-    })
-    .catch((err) => {
-      res.json({
-        message: "Failed to retrieve bookings",
-        error: err,
-      });
+    }
+
+    booking.status = "completed";
+    await booking.save(); 
+
+    res.json({
+      message: "Booking status updated to 'completed'",
+      result: booking,
     });
+  } catch (err) {
+    res.status(500).json({
+      message: "Error updating booking status",
+      error: err,
+    });
+  }
 }
