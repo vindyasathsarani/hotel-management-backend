@@ -66,11 +66,21 @@ export async function loginUser(req, res) {
 }
 
 export function isAdminValid(req) {
-  if (!req.user || req.user.type !== "admin") {
+  console.log("User in Request:", req.user); // Debugging
+
+  if (!req.user) {
+    console.log("No user found in request");
     return false;
   }
+
+  if (req.user.type !== "admin") {
+    console.log("User is not an admin");
+    return false;
+  }
+
   return true;
 }
+
 
 export function isCustomerValid(req) {
   if (!req.user || req.user.type !== "customer") {
