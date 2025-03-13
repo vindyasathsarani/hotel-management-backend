@@ -114,20 +114,26 @@ export async function getUserBookings(req, res) {
 
 export async function completeBooking(req, res) {
   try {
-    const bookingId = req.params.bookingId; 
+    // Check if the user is an admin
+    if (!isAdminValid(req)) {
+      return res.status(403).json({ message: "Access denied: Admins only." });
+    }
 
-   
-    const booking = await Booking.findOne({ bookingId: bookingId });
+    const bookingId = req.params.bookingId;
 
-   
+    // Find the booking with status 'pending'
+    const booking = await Booking.findOne({ bookingId: bookingId, status: 'pending' });
+
+    // If booking is not found or already completed
     if (!booking) {
       return res.status(404).json({
-        message: "Booking not found",
+        message: "Booking not found or not in 'pending' status.",
       });
     }
 
-    booking.status = "completed";
-    await booking.save(); 
+    // Update the booking status to 'completed'
+    booking.status = 'completed';
+    await booking.save();
 
     res.json({
       message: "Booking status updated to 'completed'",
@@ -136,7 +142,7 @@ export async function completeBooking(req, res) {
   } catch (err) {
     res.status(500).json({
       message: "Error updating booking status",
-      error: err,
+      error: err.message,
     });
   }
 }

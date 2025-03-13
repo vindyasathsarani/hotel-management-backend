@@ -1,6 +1,6 @@
 import Feedback from '../models/feedbackModels.js';
 import Booking from '../models/bookingModels.js';
-import { isCustomerValid, isAdminValid } from './userControllers.js';
+import { isCustomerValid } from './userControllers.js';
 
 export const createFeedback = async (req, res) => {
   try {
@@ -8,50 +8,60 @@ export const createFeedback = async (req, res) => {
       return res.status(403).json({ message: 'Access denied: Customers only.' });
     }
 
-    const { bookingId, rating, title, comment, photos } = req.body;
+    const bookingId = Number(req.body.bookingId); // Ensure number format
+    const { rating, title, comment, photos } = req.body;
 
     if (!bookingId || !rating || !title || !comment) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    try {
-      // Check if the booking exists, belongs to the user, and is completed
-      const booking = await Booking.findOne({
-        bookingId,
-        email: req.user.email,
-        status: 'completed',
-      });
+    console.log("🔍 Checking booking details for ID:", bookingId);
+    console.log("🔍 Checking email:", req.user.email);
 
-      if (!booking) {
-        return res.status(404).json({ message: 'Booking not found or not eligible for feedback.' });
-      }
+    // Find booking with exact email and completed status
+    const booking = await Booking.findOne({
+      bookingId: bookingId,
+      email: req.user.email,
+      status: { $regex: /^completed$/, $options: "i" }, // Case-insensitive check
+    });
 
-      // Check if feedback already exists for this booking
-      const existingFeedback = await Feedback.findOne({ bookingId });
-      if (existingFeedback) {
-        return res.status(400).json({ message: 'Feedback already submitted for this booking.' });
-      }
-
-      const feedback = new Feedback({
-        userId: req.user._id,
-        roomId: booking.roomId,
-        bookingId,
-        rating,
-        title,
-        comment,
-        photos,
-      });
-
-      await feedback.save();
-
-      res.status(201).json({
-        message: 'Feedback submitted successfully and is pending approval.',
-        feedback,
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'An error occurred while processing the booking or feedback.', error: error.message });
+    if (!booking) {
+      console.log("❌ Booking not found or not completed");
+      return res.status(404).json({ message: 'Booking not found or not eligible for feedback.' });
     }
+
+    console.log("✅ Booking Found:", booking);
+
+    // Check if feedback already exists
+    const existingFeedback = await Feedback.findOne({ bookingId });
+    if (existingFeedback) {
+      return res.status(400).json({ message: 'Feedback already submitted for this booking.' });
+    }
+
+    // Create feedback
+    const feedback = new Feedback({
+      userId: req.user._id,
+      roomId: booking.roomId,
+      bookingId,
+      rating,
+      title,
+      comment,
+      photos,
+    });
+
+    await feedback.save();
+    console.log("✅ Feedback submitted successfully");
+
+    return res.status(201).json({
+      message: 'Feedback submitted successfully and is pending approval.',
+      feedback,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'An error occurred while submitting feedback.', error: error.message });
+    console.error("❌ Error in createFeedback:", error);
+    return res.status(500).json({
+      message: 'An error occurred while submitting feedback.',
+      error: error.message,
+    });
   }
 };

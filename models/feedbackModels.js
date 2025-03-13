@@ -7,12 +7,12 @@ const feedbackSchema = new mongoose.Schema({
     required: true,
   },
   roomId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Number,
     ref: 'Room', 
     required: true,
   },
   bookingId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Number,
     ref: 'Booking', 
     required: true,
   },
@@ -37,9 +37,10 @@ const feedbackSchema = new mongoose.Schema({
   photos: [
     {
       url: { type: String, required: true },
-      caption: { type: String, trim: true, maxlength: 500 }, 
+      caption: { type: String, trim: true, maxlength: 500 },
     },
   ],
+  
   isApproved: {
     type: Boolean,
     default: false, 
