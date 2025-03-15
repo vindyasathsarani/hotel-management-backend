@@ -45,3 +45,43 @@ export function getGalleryItem(req, res){
         }
     )
 }
+
+export function deleteGalleryItem(req, res) {
+    try {
+        const user = req.user;
+        if (user == null) {
+            return res.status(403).json({
+                message: "Please login to delete a gallery item",
+            });
+        }
+        if (user.type != "admin") {
+            return res.status(403).json({
+                message: "You are not authorized to delete a gallery item",
+            });
+        }
+
+        const { id } = req.params;  
+
+        // Find and delete the gallery item by id
+        GalleryItem.findByIdAndDelete(id)
+            .then((deletedItem) => {
+                if (!deletedItem) {
+                    return res.status(404).json({
+                        message: "Gallery item not found",
+                    });
+                }
+                res.json({
+                    message: "Gallery item deleted successfully",
+                });
+            })
+            .catch(() => {
+                res.status(500).json({
+                    message: "An error occurred while deleting the gallery item",
+                });
+            });
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occurred while deleting the gallery item",
+        });
+    }
+}
