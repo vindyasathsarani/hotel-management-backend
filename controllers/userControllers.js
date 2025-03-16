@@ -2,6 +2,8 @@ import User from "../models/userModels.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
+
 
 dotenv.config();
 
@@ -38,7 +40,10 @@ export async function loginUser(req, res) {
       });
     }
 
-    const passwordMatch = bcrypt.compareSync(credentials.password, user.password);
+    const passwordMatch = bcrypt.compareSync(
+      credentials.password,
+      user.password
+    );
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
@@ -61,7 +66,9 @@ export async function loginUser(req, res) {
       token: token,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 }
 
@@ -80,7 +87,6 @@ export function isAdminValid(req) {
 
   return true;
 }
-
 
 export function isCustomerValid(req) {
   if (!req.user || req.user.type !== "customer") {
@@ -107,4 +113,44 @@ export function getUser(req, res) {
       error: error.message,
     });
   }
+}
+
+export function sendSampleEmail(req, res){
+  const email = req.body.email;
+
+  const transport = nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD
+    },
+
+  })
+
+  const message = {
+    from : "qcore100@gmail.com",
+    to :email,
+    subject: "Sample Email",
+    text: "This is the sample email"
+  }
+  transport.sendMail(message, (err, info)=>{
+    if(err){
+      console.log(err)
+      res.json({
+        message: "Email not sent",
+        error: err
+      })
+      
+    }else{
+      console.log(info);
+      res.json({
+        message: "Email sent",
+        info: info
+      })
+    }
+  })
+
 }
