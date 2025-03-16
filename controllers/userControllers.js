@@ -113,24 +113,43 @@ export function isCustomerValid(req) {
   return true;
 }
 
-export function getUser(req, res) {
-  try {
-    const user = req.body.user;
-    if (!user) {
-      return res.json({
-        message: "not found",
-      });
-    }
-    res.json({
-      message: "found",
-      user: user,
+export function getAllUsers(req, res) {
+  // Validate admin
+  if (!isAdminValid(req)) {
+    res.status(403).json({
+      message: "Forbidden",
     });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to retrieve user",
-      error: error.message,
-    });
+    return;
   }
+
+  // Extract page and pageSize from query parameters
+  const page = parseInt(req.body.page) || 1; // Default to page 1
+  const pageSize = parseInt(req.body.pageSize) || 10; // Default to 10 items per page
+  const skip = (page - 1) * pageSize;
+
+  User.find()
+    .skip(skip)
+    .limit(pageSize)
+    .then((users) => {
+      User.countDocuments().then((totalCount) => {
+        res.json({
+          message: "Users found",
+          users: users,
+          pagination: {
+            currentPage: page,
+            pageSize: pageSize,
+            totalUsers: totalCount,
+            totalPages: Math.ceil(totalCount / pageSize),
+          },
+        });
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        message: "Error fetching users",
+        error: err,
+      });
+    });
 }
 
 export function sendOtpEmail(email,otp) {
