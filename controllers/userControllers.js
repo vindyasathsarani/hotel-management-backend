@@ -1,33 +1,51 @@
 import User from "../models/userModels.js";
+import Otp from "../models/otp.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 
-
 dotenv.config();
 
-export async function postUsers(req, res) {
-  try {
-    const user = req.body;
-    const password = req.body.password;
+export function postUsers(req, res) {
+  const user = req.body;
 
-    const passwordHash = bcrypt.hashSync(password, 10);
-    user.password = passwordHash;
+  const password = req.body.password;
 
-    const newUser = new User(user);
-    await newUser.save();
+  const saltRounds = 10;
 
-    res.json({
-      message: "User Created Successfully",
+  const passwordHash = bcrypt.hashSync(password, saltRounds);
+
+  console.log(passwordHash);
+
+  user.password = passwordHash;
+
+  const newUser = new User(user);
+  newUser
+    .save()
+    .then(() => {
+      //1000 - 9999 random number
+      const otp = Math.floor(1000 + Math.random() * 9000);
+
+      const newOtp = new Otp({
+        email: user.email,
+        otp: otp
+      })
+      newOtp.save().then(() => {
+        sendOtpEmail(user.email,otp);
+        res.json({
+          message: "User created successfully",
+        });
+      })
+      
+    })
+    .catch(() => {
+      res.json({
+        message: "User creation failed",
+      });
     });
-  } catch (error) {
-    res.status(500).json({
-      message: "User Creation Failed",
-      error: error.message,
-    });
-  }
 }
+
 
 export async function loginUser(req, res) {
   try {
@@ -115,8 +133,8 @@ export function getUser(req, res) {
   }
 }
 
-export function sendSampleEmail(req, res){
-  const email = req.body.email;
+export function sendOtpEmail(email,otp) {
+  
 
   const transport = nodemailer.createTransport({
     service: "gmail",
@@ -125,32 +143,22 @@ export function sendSampleEmail(req, res){
     secure: false,
     auth: {
       user: process.env.EMAIL,
-      pass: process.env.PASSWORD
+      pass: process.env.PASSWORD,
     },
-
-  })
+  });
 
   const message = {
-    from : "qcore100@gmail.com",
-    to :email,
-    subject: "Sample Email",
-    text: "This is the sample email"
+    from : "qscore100@gmail.com",
+    to : email,
+    subject : "Validating OTP",
+    text : "Your otp code is "+otp
   }
-  transport.sendMail(message, (err, info)=>{
-    if(err){
-      console.log(err)
-      res.json({
-        message: "Email not sent",
-        error: err
-      })
-      
-    }else{
-      console.log(info);
-      res.json({
-        message: "Email sent",
-        info: info
-      })
-    }
-  })
 
+  transport.sendMail(message, (err, info) => {
+    if(err){
+      console.log(err);     
+    }else{
+      console.log(info)
+    }
+  });
 }
