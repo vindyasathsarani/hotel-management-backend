@@ -3,6 +3,7 @@ import {
     cancelBooking,
   completeBooking,
   createBooking,
+  createBookingUsingCategory,
   getAllBookings,
   getUserBookings,
   retriveBookinByDate,
@@ -14,6 +15,7 @@ bookingRouter.post("/", createBooking);
 bookingRouter.get("/user", getUserBookings);
 bookingRouter.get("/", getAllBookings);
 bookingRouter.post("/filter-date", retriveBookinByDate)
+bookingRouter.post("/create-by-category", createBookingUsingCategory)
 bookingRouter.put('/:bookingId/cancel', cancelBooking);
 bookingRouter.put('/complete/:bookingId', completeBooking)
 

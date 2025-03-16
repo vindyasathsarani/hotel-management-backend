@@ -1,4 +1,5 @@
 import Booking from "../models/bookingModels.js";
+import Room from "../models/roomModels.js";
 import { isCustomerValid } from "./userControllers.js";
 import { isAdminValid } from "./userControllers.js";
 
@@ -56,36 +57,30 @@ export async function getAllBookings(req, res) {
   }
 }
 
+export function retriveBookinByDate(req, res) {
+  const start = req.body.start;
+  const end = req.body.end;
 
-export function retriveBookinByDate(req, res){
-  const start = req.body.start
-  const end = req.body.end
-
-  
   Booking.find({
     start: {
-      $gte : new Date(start)
+      $gte: new Date(start),
     },
     end: {
-      $lte: new Date(end)
-    }
-  }).then(
-    (result)=>{
-      res.json(
-        {
-          message: "Filtered bookings",
-          result: result
-        }
-      )
-    }
-  ).catch((err)=>{
-    res.json(
-      {
-        message: "Failed to get filtered bookings",
-        error: err
-      }
-    )
+      $lte: new Date(end),
+    },
   })
+    .then((result) => {
+      res.json({
+        message: "Filtered bookings",
+        result: result,
+      });
+    })
+    .catch((err) => {
+      res.json({
+        message: "Failed to get filtered bookings",
+        error: err,
+      });
+    });
 }
 
 export async function cancelBooking(req, res) {
@@ -101,7 +96,7 @@ export async function cancelBooking(req, res) {
     const result = await Booking.findOneAndUpdate(
       { bookingId: bookingId },
       { status: "cancelled" },
-      { new: true } 
+      { new: true }
     );
 
     if (!result) {
@@ -154,7 +149,10 @@ export async function completeBooking(req, res) {
     const bookingId = req.params.bookingId;
 
     // Find the booking with status 'pending'
-    const booking = await Booking.findOne({ bookingId: bookingId, status: 'pending' });
+    const booking = await Booking.findOne({
+      bookingId: bookingId,
+      status: "pending",
+    });
 
     // If booking is not found or already completed
     if (!booking) {
@@ -164,7 +162,7 @@ export async function completeBooking(req, res) {
     }
 
     // Update the booking status to 'completed'
-    booking.status = 'completed';
+    booking.status = "completed";
     await booking.save();
 
     res.json({
@@ -174,6 +172,64 @@ export async function completeBooking(req, res) {
   } catch (err) {
     res.status(500).json({
       message: "Error updating booking status",
+      error: err.message,
+    });
+  }
+}
+
+export async function createBookingUsingCategory(req, res) {
+  try {
+    const start = new Date(req.body.start);
+    const end = new Date(req.body.end);
+
+    const overlappingBookings = await Booking.find({
+      $or: [
+        {
+          start: {
+            $gte: start,
+            $lt: end,
+          },
+        },
+        {
+          end: {
+            $gt: start,
+            $lte: end,
+          },
+        },
+      ],
+    });
+
+    const bookedRooms = overlappingBookings.map((booking) => booking.roomId);
+
+    const availableRooms = await Room.find({
+      roomId: { $nin: bookedRooms },
+      category: req.body.category,
+    });
+
+    if (availableRooms.length === 0) {
+      return res.json({ message: "No rooms available" });
+    }
+
+    const startingId = 1200;
+    const count = await Booking.countDocuments({});
+    const newId = startingId + count + 1;
+
+    const newBooking = new Booking({
+      bookingId: newId,
+      roomId: rooms[0].roomId,
+      email: req.user.email,
+      start: start,
+      end: end,
+    });
+
+    const result = await newBooking.save();
+    res.json({
+      message: "Booking created successfully",
+      result: result,
+    });
+  } catch (err) {
+    res.json({
+      message: "Booking creation failed",
       error: err.message,
     });
   }
