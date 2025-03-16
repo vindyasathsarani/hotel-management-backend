@@ -162,3 +162,29 @@ export function sendOtpEmail(email,otp) {
     }
   });
 }
+
+export function verifyUserEmail(req, res){
+  const otp = req.body.otp
+  const email = req.body.email
+
+  Otp.find({email : email}).sort({date : -1}).then((otpList)=>{
+    if(otpList.length == 0){
+      res.json({
+        message : "Otp is invalid"
+      })
+    }else{
+      const latestOtp = otpList[0];
+      if(latestOtp.otp == otp){
+        User.findOneAndUpdate({email : email},{emailVerified : true}).then(() => {
+          res.json({
+            message : "User email verified successfully"
+          });
+        });
+      }else{
+        res.json({
+          message : "Otp is invalid"
+        });
+    }
+  }
+})
+}
