@@ -56,6 +56,38 @@ export async function getAllBookings(req, res) {
   }
 }
 
+
+export function retriveBookinByDate(req, res){
+  const start = req.body.start
+  const end = req.body.end
+
+  
+  Booking.find({
+    start: {
+      $gte : new Date(start)
+    },
+    end: {
+      $lte: new Date(end)
+    }
+  }).then(
+    (result)=>{
+      res.json(
+        {
+          message: "Filtered bookings",
+          result: result
+        }
+      )
+    }
+  ).catch((err)=>{
+    res.json(
+      {
+        message: "Failed to get filtered bookings",
+        error: err
+      }
+    )
+  })
+}
+
 export async function cancelBooking(req, res) {
   try {
     if (!isAdminValid(req)) {
